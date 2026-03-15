@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { flashcards, type FlashcardCategory } from "../data/flashcards";
+import { Flashcard } from "../components/Flashcard";
 
 export const StudySessionPage = () => {
   const [searchParams] = useSearchParams();
@@ -33,10 +35,39 @@ export const StudySessionPage = () => {
 
   const cardsForCategory = flashcards.filter((card) => card.category === categoryParam);
 
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [wrongCardIds, setWrongCardIds] = useState<string[]>([]);
+  const [finished, setFinished] = useState(false);
+
+  const hasCards = cardsForCategory.length > 0;
+  const currentCard = hasCards && !finished ? cardsForCategory[currentIndex] : null;
+
+  const total = cardsForCategory.length;
+  const currentNumber = currentIndex + 1;
+
   const categoryLabelMap: Record<FlashcardCategory, string> = {
     animals: "Animals",
     food: "Food",
     verbs: "Verbs"
+  };
+
+  const goToNextCard = () => {
+    if (currentIndex + 1 < total) {
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      setFinished(true);
+    }
+  };
+
+  const handleMarkRight = () => {
+    goToNextCard();
+  };
+
+  const handleMarkWrong = () => {
+    if (currentCard) {
+      setWrongCardIds((prev) => (prev.includes(currentCard.id) ? prev : [...prev, currentCard.id]));
+    }
+    goToNextCard();
   };
 
   return (
@@ -48,28 +79,49 @@ export const StudySessionPage = () => {
               Study: {categoryLabelMap[categoryParam]}
             </h1>
             <p className="subtitle">
-              This is a simple preview of the cards in this category. A full flip-card experience
-              with tracking will be added in the next phase.
+              Flip the card to see the English translation, then mark whether you knew it.
             </p>
           </div>
         </header>
 
-        <section aria-label="Cards in category" className="section">
-          <h2 className="section-title">Cards</h2>
-          <div className="section-body">
-            {cardsForCategory.length === 0 ? (
-              <p>No cards found for this category.</p>
-            ) : (
-              <ul>
-                {cardsForCategory.map((card) => (
-                  <li key={card.id}>
-                    <strong>{card.spanish}</strong> — {card.english}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </section>
+        {!hasCards && (
+          <section className="section">
+            <p className="section-body">No cards found for this category.</p>
+          </section>
+        )}
+
+        {hasCards && !finished && currentCard && (
+          <section className="section study-layout" aria-label="Study card">
+            <div className="study-meta">
+              <span className="study-progress">
+                Card {currentNumber} of {total}
+              </span>
+              <span className="pill">
+                Wrong so far: {wrongCardIds.length} / {total}
+              </span>
+            </div>
+
+            <Flashcard
+              spanish={currentCard.spanish}
+              english={currentCard.english}
+              onMarkRight={handleMarkRight}
+              onMarkWrong={handleMarkWrong}
+            />
+          </section>
+        )}
+
+        {hasCards && finished && (
+          <section className="section study-summary" aria-label="Study summary">
+            <p>
+              Session complete! You reviewed {total} card{total === 1 ? "" : "s"} in the{" "}
+              {categoryLabelMap[categoryParam]} deck.
+            </p>
+            <p>
+              You marked <strong>{total - wrongCardIds.length}</strong> as right and{" "}
+              <strong>{wrongCardIds.length}</strong> as wrong.
+            </p>
+          </section>
+        )}
 
         <p className="footer-note">
           Not the right deck?{" "}

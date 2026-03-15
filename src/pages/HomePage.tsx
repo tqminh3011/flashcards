@@ -7,7 +7,7 @@ export const HomePage = () => {
         <header className="card-header">
           <div>
             <h1 id="home-title" className="title">
-              Spanish Flashcards
+              Learn Spanish Card Game
             </h1>
             <p className="subtitle">
               Practice core Spanish vocabulary with focused study, quizzes, and simple stats.
